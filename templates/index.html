@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <title>Artikel Test</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="data:image/x-icon;base64,AAABAAEAEBAQAAAAAAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAMfXyAAoFAAABAAgAHALeABIK9QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARERERERERERERERERERERERERERERERERERERERERERERERERERERREREVVVERERERERERERERERERERERERERERERERERERERERERERERCIiIzMzMyIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiL//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" rel="icon" type="image/x-icon" />
+    <link rel="stylesheet" href="/static/mini-default.min.css">
+    <style>
+     .quiz-box {
+         border: 1px solid black;
+         padding: 1em;
+         margin: 1em;
+         margin-left: auto;
+         margin-right: auto;
+     }
+
+     .score {
+         font-size: 1.4em;
+     }
+
+     .question {
+         font-size: 3em;
+     }
+
+     h1, h2, h3, p {
+         text-align: center;
+     }
+
+     button {
+         border: 1px solid #333;
+         text-align: center;
+         font-size: 3em;
+     }
+     button:hover {
+         border: 1px solid #000;
+     }
+    </style>
+  </head>
+
+  <body id="body">
+
+      <div class="container">
+          <div class="row">
+
+              <div class="quiz-box" style="background-color: #fd7e14">
+                  <div>
+                      <h3 style="color: white">Alles verstanden?</h3>
+                      <p>Dann teste doch gleich dein Deutsch-Wissen:</p>
+                      <h1 style="color: white">QUIZ</h1>
+                      <p style="color: white">Klicke auf den richtigen Artikel:</p>
+                  </div>
+
+                  <div class="quiz-box" style="background-color: #ffffff">
+                      <h1>Der - die - das - Quiz</h1>
+                      <h2>Teste dein Wissen. Der richtige Artikel ist…</h2>
+                      <p class="score">
+                          <span id="richtig" style="color: green">0</span> richtig
+                          /
+                          <span id="falsch" style="color: red">0</span> falsch
+                      </p>
+
+                      <div id="quiz-block" class="quiz-box" style="background-color: #d9e6e9">
+                          <p class="question">
+                              <span id="article">...</span> <span id="word"></span>
+                          </p>
+
+                          <p id="article-buttons" style="visibility: visible">
+                              <button id="btn-der">der</button>
+                              <button id="btn-die">die</button>
+                              <button id="btn-das">das</button>
+                          </p>
+
+                          <p id="next" style="visibility: hidden">
+                              <button id="btn-next">Weiter</button>
+                          </p>
+                      </div>
+
+                      <p>Weißt du es?</p>
+
+                  </div>
+              </div>
+          </div>
+      </div>
+
+<script>
+ var richtig = 0;
+ var falsch = 0;
+ var word = "";
+
+ function update_counters() {
+     document.getElementById('richtig').innerHTML = richtig;
+     document.getElementById('falsch').innerHTML = falsch;
+ }
+
+ function get_word() {
+     document.getElementById('article').style.color = null;
+     document.getElementById('article').innerHTML = '...';
+     document.getElementById('word').innerHTML = '';
+     document.getElementById('next').style.visibility = 'hidden';
+     document.getElementById('btn-der').style['background-color'] = null;
+     document.getElementById('btn-die').style['background-color'] = null;
+     document.getElementById('btn-das').style['background-color'] = null;
+     document.getElementById('btn-der').removeAttribute("disabled");
+     document.getElementById('btn-die').removeAttribute("disabled");
+     document.getElementById('btn-das').removeAttribute("disabled");
+     document.getElementById('quiz-block').style['background-color'] = '#d9e6e9';
+     fetch('/quiz')
+         .then(
+             function(response) {
+                 if (response.status !== 200) {
+                     console.log('http error: ' + response.status);
+                     return;
+                 }
+
+                 response.json().then(function(data) {
+                     console.log(data);
+                     word = data.word;
+                     document.getElementById('word').innerHTML = word;
+                 })
+             }
+         )
+         .catch(function(err) {
+             console.log('Fetch error: ', err);
+         })
+ }
+
+ function check_answer(word, article) {
+     fetch('/quiz', {
+         method: 'post',
+         headers: {
+             'Content-Type': 'application/json'
+         },
+         body: JSON.stringify({'word': word, 'article': article})
+     })
+         .then(
+             function(response) {
+                 if (response.status !== 200) {
+                     console.log('http error: ' + response.status);
+                     return;
+                 }
+
+                 response.json().then(function(data) {
+                     console.log(data);
+                     word = data.word;
+                     document.getElementById('word').innerHTML = word;
+                     document.getElementById('article').innerHTML = data.article;
+                     if (data.richtig) {
+                         richtig++;
+                         document.getElementById('article').style.color = 'green';
+                         document.getElementById('btn-'+article).style['background-color'] = 'green';
+                         document.getElementById('quiz-block').style['background-color'] = '#82d590';
+                     } else {
+                         falsch++;
+                         document.getElementById('article').style.color = 'red';
+                         document.getElementById('btn-'+article).style['background-color'] = 'red';
+                         document.getElementById('btn-'+data.article).style['background-color'] = 'green';
+                         document.getElementById('quiz-block').style['background-color'] = '#ec727e';
+                     }
+                     update_counters();
+                     document.getElementById('next').style.visibility = 'visible';
+
+                     document.getElementById('btn-der').setAttribute("disabled", "disabled");
+                     document.getElementById('btn-die').setAttribute("disabled", "disabled");
+                     document.getElementById('btn-das').setAttribute("disabled", "disabled");
+                 })
+             }
+         )
+         .catch(function(err) {
+             console.log('Fetch error: ', err);
+         })
+ }
+
+ get_word();
+
+ var btn_next = document.querySelector('#btn-next');
+ btn_next.onclick = function() {
+     get_word();
+ }
+
+ var btn_der = document.querySelector('#btn-der');
+ var btn_die = document.querySelector('#btn-die');
+ var btn_das = document.querySelector('#btn-das');
+
+ btn_der.onclick = function() {
+     check_answer(word, 'der');
+ }
+
+ btn_die.onclick = function() {
+     check_answer(word, 'die');
+ }
+
+ btn_das.onclick = function() {
+     check_answer(word, 'das');
+ }
+
+
+</script>
+
+
+  </body>
+
+</html>
